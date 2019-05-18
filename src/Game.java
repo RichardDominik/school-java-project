@@ -1,194 +1,27 @@
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.*;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
+import javafx.scene.shape.Sphere;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashSet;
 import java.util.Scanner;
-
-class Player extends Thread {
-    private final float MOUSE_SENSITIVITY = 0.1f;
-    private enum Dir {FORWARD, BACKWARD, STOP}
-    private Dir direction = Dir.STOP;
-    private Game game;
-
-    boolean mousePressed = false;
-    boolean alive = true;
-    double angle = 0;
-    double lastMouseX;
-    double lastMouseY;
-    int health = 60;
-    int ammo = 30;
-
-    Player(Game game) {
-        this.game = game;
-    }
-
-    @Override
-    public void run() {
-        while (alive) {
-            try {
-                movement();
-                Thread.sleep(30);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    void setDirection(KeyEvent event) {
-        switch (event.getCode()) {
-            case W:
-                direction = Dir.FORWARD;
-                break;
-            case S:
-                direction = Dir.BACKWARD;
-                break;
-        }
-    }
-
-    void mouseDragged(MouseEvent event) {
-        if (mousePressed) {
-            Rotate rotate = (Rotate) game.camera.getTransforms().get(0);
-            game.camera.getTransforms().clear();
-            rotate.setAngle(rotate.getAngle() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
-            angle = rotate.getAngle();
-            game.camera.getTransforms().add(rotate);
-
-            /* Alternative without Rotate matrix
-            lab.camera.setRotationAxis(Rotate.Y_AXIS);
-            lab.camera.setRotate(lab.camera.getRotate() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
-            angle = lab.camera.getRotate();
-            */
-        }
-        lastMouseX = event.getSceneX();
-        lastMouseY = event.getSceneY();
-    }
-
-    void stopMovement() {
-        direction = Dir.STOP;
-    }
-
-    private void movement() {
-        if (direction == Dir.STOP) return;
-        double dx = Math.sin(Math.toRadians(angle));
-        double dz = Math.cos(Math.toRadians(angle));
-        double oldZ = game.camera.getTranslateZ();
-        double oldX = game.camera.getTranslateX();
-        switch (direction) {
-            case FORWARD:
-                game.camera.translateZProperty().set(game.camera.getTranslateZ() + dz);
-                game.camera.translateXProperty().set(game.camera.getTranslateX() + dx);
-                break;
-            case BACKWARD:
-                game.camera.translateZProperty().set(game.camera.getTranslateZ() - dz);
-                game.camera.translateXProperty().set(game.camera.getTranslateX() - dx);
-                break;
-        }
-        if (game.checkCameraCollision()) {
-            game.camera.translateZProperty().set(oldZ);
-            game.camera.translateXProperty().set(oldX);
-        }
-    }
-}
-
-class Enemy extends Thread {
-    private Game game;
-
-    boolean alive = true;
-    int health = 100;
-    int healthFactor = 10;
-
-    PhongMaterial enemyMaterial = new PhongMaterial();
-
-    Enemy(Game game, int X, int Z) {
-        this.game = game;
-        enemyMaterial.setDiffuseColor(Color.RED);
-        EnemyBox enemy = new EnemyBox(X, Z, enemyMaterial, this);
-        game.group.getChildren().add(enemy);
-    }
-
-    @Override
-    public void run() {
-        while (alive) {
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-}
-
-class EnemyBox extends Box {
-    Enemy enemy;
-
-    EnemyBox(int X, int Z,  PhongMaterial enemyMaterial, Enemy enemy){
-        super();
-        this.enemy = enemy;
-        setWidth(12);
-        setHeight(5);
-        setDepth(12);
-        setTranslateX(X);
-        setTranslateZ(Z);
-        setTranslateY(-1);
-        setMaterial(enemyMaterial);
-    }
-}
-
-class Ammo extends Box {
-    private int sum = 10;
-
-    Ammo(int X, int Z,  PhongMaterial ammmoMaterial){
-        super();
-        setWidth(12);
-        setHeight(5);
-        setDepth(12);
-        setTranslateX(X);
-        setTranslateZ(Z);
-        setTranslateY(-1);
-        setMaterial(ammmoMaterial);
-    }
-
-    public int getSum() {
-        return sum;
-    }
-}
-
-class FirstAid extends Box {
-    private int sum = 40;
-
-    FirstAid(int X, int Z,  PhongMaterial firstAidMaterial){
-        super();
-        setWidth(12);
-        setHeight(5);
-        setDepth(12);
-        setTranslateX(X);
-        setTranslateZ(Z);
-        setTranslateY(-1);
-        setMaterial(firstAidMaterial);
-    }
-
-    public int getSum() {
-        return sum;
-    }
-}
-
+import java.util.Set;
 
 public class Game extends Application {
     // 2D UI Panel
@@ -196,6 +29,7 @@ public class Game extends Application {
 
     Group group = new Group();
     Camera camera = new PerspectiveCamera(true);
+    Cylinder cylinder;
 
     SubScene scene = new SubScene(group, 1280, 720, true, SceneAntialiasing.BALANCED);
 
@@ -204,30 +38,14 @@ public class Game extends Application {
     PhongMaterial roofMaterial = new PhongMaterial();
     PhongMaterial firstAidMaterial = new PhongMaterial();
     PhongMaterial ammmoMaterial = new PhongMaterial();
+    PhongMaterial weaponMarerial = new PhongMaterial();
 
     // Layout aplikácie
     private BorderPane layout = new BorderPane();
     private Scene root = new Scene(layout, 1280, 770);
     Text text;
-
     Player player = new Player(this);
-
     private char[][] map = new char[12][12];
-
-//    private char[][] map = {
-//            {'#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'},
-//            {'#', '.', 'h', '.', '.', '.', '.', '.', '.', '#', 'a', '#'},
-//            {'#', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
-//            {'#', '.', '#', '.', '.', '#', '#', '#', '#', '#', '#', '#'},
-//            {'#', '.', '#', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
-//            {'#', '.', '#', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
-//            {'#', '.', '#', '.', '.', '#', '.', '.', '#', '.', '.', '#'},
-//            {'#', '.', '#', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
-//            {'#', 'e', '#', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
-//            {'#', '.', '#', '#', '.', '#', '.', '.', '#', '#', '.', '#'},
-//            {'#', '.', 'a', '#', '.', '.', '.', '.', '.', '#', 'h', '#'},
-//            {'#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'}
-//    };
 
     @Override
     public void start(Stage primaryStage) {
@@ -242,6 +60,7 @@ public class Game extends Application {
         camera.setTranslateZ(50);
         camera.setTranslateY(0);
         camera.setFarClip(500);
+        createWeapon();
         createFloor();
         readMapFromFile();
         loadMap();
@@ -252,6 +71,24 @@ public class Game extends Application {
         primaryStage.setTitle("3D game");
         primaryStage.setScene(root);
         primaryStage.show();
+
+
+        Timeline animation = new Timeline(new KeyFrame(Duration.millis(20), o -> {
+            update();
+        }));
+        animation.setCycleCount(Timeline.INDEFINITE);
+        animation.play();
+    }
+
+    private void createWeapon(){
+        weaponMarerial.setDiffuseMap(new Image("textures/MP_diff_orange.png"));
+        cylinder = new Cylinder(0.025, 2);
+        cylinder.setTranslateX(50);
+        cylinder.setTranslateZ(50);
+        cylinder.setTranslateY(0.1);
+        cylinder.getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
+        cylinder.setMaterial(weaponMarerial);
+        group.getChildren().add(cylinder);
     }
 
 
@@ -275,10 +112,14 @@ public class Game extends Application {
                 case F:
                     camera.translateYProperty().set(camera.getTranslateY() + 2);
                     break;
+                case SPACE:
+                    shoot();
+                    break;
                 default:
                     player.setDirection(event);
                     break;
             }
+
         });
 
         root.setOnKeyReleased(event -> player.stopMovement());
@@ -387,7 +228,7 @@ public class Game extends Application {
         }
     }
 
-    boolean checkCameraCollision() {
+    synchronized boolean checkCameraCollision () {
         for (Node n: group.getChildren()) {
             if (n instanceof Box) {
                 Box b = (Box) n;
@@ -410,18 +251,52 @@ public class Game extends Application {
                     });
                 } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof EnemyBox){
                     player.health -= ((EnemyBox) b).enemy.healthFactor;
-                    text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
 
-                    if(player.health <= 0){
-                        player.alive = false;
-                        text.setText("You was killed by enemy !");
-                    }
+                    Platform.runLater(() -> {
+                        text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
+
+                        if(player.health <= 0){
+                            player.alive = false;
+                            text.setText("You was killed by enemy !");
+                        }
+                    });
+
                 } else if(b.getBoundsInParent().intersects(camera.getBoundsInParent()) ){
                     return true;
                 }
             }
         }
+
         return false;
+    }
+
+    private void shoot() {
+        if(player.ammo > 0){
+            Sphere projectile = new Sphere(0.5);
+            projectile.setTranslateX(camera.getTranslateX());
+            projectile.setTranslateY(camera.getTranslateY());
+            projectile.setTranslateZ(camera.getTranslateZ() + 10);
+            projectile.setMaterial(new PhongMaterial(Color.RED));
+            group.getChildren().add(projectile);
+            player.ammo -= 1;
+            text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
+        }
+    }
+
+    private synchronized void update() {
+        Set<Node> toRemove = new HashSet<>();
+        for (Node n : group.getChildren()) {
+            if (n instanceof Sphere) {
+                Sphere s = (Sphere) n;
+                s.setTranslateZ(s.getTranslateZ() + 5);
+//                if (s.getTranslateY() < -20) {
+//                    toRemove.add(n);
+//                } else {
+
+//                }
+            }
+        }
+        group.getChildren().removeAll(toRemove);
     }
 
     public static void main(String[] args) {
