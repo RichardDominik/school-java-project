@@ -14,7 +14,6 @@ import javafx.scene.shape.Cylinder;
 import javafx.scene.shape.Sphere;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
-import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -74,11 +73,11 @@ public class Game extends Application {
         primaryStage.setScene(root);
         primaryStage.show();
 
-//        Timeline animation = new Timeline(new KeyFrame(Duration.millis(500), o -> {
-//            update();
-//        }));
-//        animation.setCycleCount(Timeline.INDEFINITE);
-//        animation.play();
+        Timeline animation = new Timeline(new KeyFrame(Duration.millis(1000), o -> {
+            update();
+        }));
+        animation.setCycleCount(Timeline.INDEFINITE);
+        animation.play();
     }
 
     private void createWeapon(){
@@ -285,15 +284,19 @@ public class Game extends Application {
                 angle = 0;
                 first = true;
             }
-            double dx = 10 * Math.sin(Math.toRadians(angle));
-            double dy = 10 * Math.cos(Math.toRadians(angle));
 
-            System.out.println(rotate.getAngle());
-            Sphere projectile = new Sphere(0.5);
-            projectile.setMaterial(new PhongMaterial(Color.RED));
-            projectile.setTranslateX(camera.getTranslateX() + dx);
-            projectile.setTranslateY(camera.getTranslateY());
-            projectile.setTranslateZ(camera.getTranslateZ() + dy);
+
+
+
+            Projectile projectile = new Projectile(new PhongMaterial(Color.RED), camera, angle);
+
+
+//            System.out.println(rotate.getAngle());
+//            Sphere projectile = new Sphere(0.5);
+//            projectile.setMaterial(new PhongMaterial(Color.RED));
+//            projectile.setTranslateX(camera.getTranslateX() + dx);
+//            projectile.setTranslateY(camera.getTranslateY());
+//            projectile.setTranslateZ(camera.getTranslateZ() + dy);
 //            Rotate sranda = (Rotate) cylinder.getTransforms().get(0);
 //
 //            projectile.getTransforms().add(sranda);
@@ -338,6 +341,8 @@ public class Game extends Application {
             //System.out.println(cylinder.getLayoutY());
 
             //System.out.println(projectile.getTransforms().get(0));
+
+
             group.getChildren().add(projectile);
             player.ammo -= 1;
             text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
@@ -350,9 +355,12 @@ public class Game extends Application {
 //            synchronized (list) {
         CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
                 for (Node n : c) {
-                    if (n instanceof Sphere) {
+                    if (n instanceof Sphere && n instanceof Projectile) {
                         Sphere s = (Sphere) n;
-                        s.setTranslateZ(s.getTranslateZ() + 5);
+//                        s.setTranslateX(s.getTranslateX() * 1.25);
+//                        s.setTranslateZ(s.getTranslateZ() * 1.25);
+                        ((Projectile) n).lenght += 10;
+                        ((Projectile) n).recompute();
                         checkProjectileConflicts(s);
                     }
                 }
