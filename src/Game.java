@@ -14,17 +14,16 @@ import javafx.scene.shape.Cylinder;
 import javafx.scene.shape.Sphere;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Game extends Application {
-    // 2D UI Panel
     private HBox panel = new HBox();
 
     Group group = new Group();
@@ -39,27 +38,31 @@ public class Game extends Application {
     PhongMaterial firstAidMaterial = new PhongMaterial();
     PhongMaterial ammmoMaterial = new PhongMaterial();
     PhongMaterial weaponMarerial = new PhongMaterial();
+    double X;
+    double XX;
 
-    // Layout aplikácie
     private BorderPane layout = new BorderPane();
     private Scene root = new Scene(layout, 1280, 770);
     Text text;
     Player player = new Player(this);
     private char[][] map = new char[12][12];
+    int countOfEnemies = 0;
+    boolean checkEnemyConflict = false;
+    boolean first = false;
 
     @Override
     public void start(Stage primaryStage) {
         preparePanel();
 
-        layout.setCenter(scene); // hore bude 3D scéna
-        layout.setBottom(panel); // dole 2D UI Panel
+        layout.setCenter(scene);
+        layout.setBottom(panel);
 
         scene.setFill(Color.LIGHTBLUE);
         scene.setCamera(camera);
         camera.setTranslateX(50);
         camera.setTranslateZ(50);
         camera.setTranslateY(0);
-        camera.setFarClip(500);
+        camera.setFarClip(700);
         createWeapon();
         createFloor();
         readMapFromFile();
@@ -67,17 +70,15 @@ public class Game extends Application {
         setEvents();
         player.start();
 
-
         primaryStage.setTitle("3D game");
         primaryStage.setScene(root);
         primaryStage.show();
 
-
-        Timeline animation = new Timeline(new KeyFrame(Duration.millis(20), o -> {
-            update();
-        }));
-        animation.setCycleCount(Timeline.INDEFINITE);
-        animation.play();
+//        Timeline animation = new Timeline(new KeyFrame(Duration.millis(500), o -> {
+//            update();
+//        }));
+//        animation.setCycleCount(Timeline.INDEFINITE);
+//        animation.play();
     }
 
     private void createWeapon(){
@@ -113,6 +114,7 @@ public class Game extends Application {
                     camera.translateYProperty().set(camera.getTranslateY() + 2);
                     break;
                 case SPACE:
+                    checkEnemyConflict = true;
                     shoot();
                     break;
                 default:
@@ -172,6 +174,7 @@ public class Game extends Application {
                     createAmmo(X, Z);
                 } else if (map[i][j] == 'e'){
                     new Enemy(this, X, Z);
+                    countOfEnemies++;
                 }
                 X += 50;
             }
@@ -229,54 +232,112 @@ public class Game extends Application {
     }
 
     synchronized boolean checkCameraCollision () {
-        for (Node n: group.getChildren()) {
-            if (n instanceof Box) {
-                Box b = (Box) n;
-                if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof Ammo) {
-                    player.ammo += ((Ammo) b).getSum();
-                    System.out.println();
-                    Platform.runLater(() -> {
-                        group.getChildren().remove(n);
-                        text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
-                    });
-                } else if(b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof FirstAid){
-                    if(player.health + ((FirstAid) b).getSum() > 100){
-                        player.health = 100;
-                    } else {
-                        player.health += ((FirstAid) b).getSum();
-                    }
-                    Platform.runLater(() -> {
-                        group.getChildren().remove(n);
-                        text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
-                    });
-                } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof EnemyBox){
-                    player.health -= ((EnemyBox) b).enemy.healthFactor;
-
-                    Platform.runLater(() -> {
-                        text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
-
-                        if(player.health <= 0){
-                            player.alive = false;
-                            text.setText("You was killed by enemy !");
+        CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
+            for (Node n : c) {
+                if (n instanceof Box) {
+                    Box b = (Box) n;
+                    if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof Ammo) {
+                        player.ammo += ((Ammo) b).getSum();
+                        Platform.runLater(() -> {
+                            group.getChildren().remove(n);
+                            text.setText("HEALTH: " + player.health + "%" + "      AMMO: " + player.ammo);
+                        });
+                    } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof FirstAid) {
+                        if (player.health + ((FirstAid) b).getSum() > 100) {
+                            player.health = 100;
+                        } else {
+                            player.health += ((FirstAid) b).getSum();
                         }
-                    });
+                        Platform.runLater(() -> {
+                            group.getChildren().remove(n);
+                            text.setText("HEALTH: " + player.health + "%" + "      AMMO: " + player.ammo);
+                        });
+                    } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof EnemyBox) {
+                        player.health -= ((EnemyBox) b).enemy.healthFactor;
 
-                } else if(b.getBoundsInParent().intersects(camera.getBoundsInParent()) ){
-                    return true;
+                        Platform.runLater(() -> {
+                            text.setText("HEALTH: " + player.health + "%" + "      AMMO: " + player.ammo);
+
+                            if (player.health <= 0) {
+                                player.alive = false;
+                                text.setText("You was killed by enemy !");
+                            }
+                        });
+
+                    } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent())) {
+                        return true;
+                    }
                 }
             }
-        }
 
         return false;
     }
 
-    private void shoot() {
-        if(player.ammo > 0){
+
+    private synchronized void shoot() {
+        if(player.ammo > 0 && player.alive){
+            Rotate rotate = (Rotate) cylinder.getTransforms().get(0);
+
+            double angle = rotate.getAngle();
+
+            if(!first){
+                //pretoze je default camery z nejakeho dovodu -90 stupnov ?!
+                angle = 0;
+                first = true;
+            }
+            double dx = 10 * Math.sin(Math.toRadians(angle));
+            double dy = 10 * Math.cos(Math.toRadians(angle));
+
+            System.out.println(rotate.getAngle());
             Sphere projectile = new Sphere(0.5);
-            projectile.setTranslateX(camera.getTranslateX());
-            projectile.setTranslateY(camera.getTranslateY());
-            projectile.setTranslateZ(camera.getTranslateZ() + 10);
             projectile.setMaterial(new PhongMaterial(Color.RED));
+            projectile.setTranslateX(camera.getTranslateX() + dx);
+            projectile.setTranslateY(camera.getTranslateY());
+            projectile.setTranslateZ(camera.getTranslateZ() + dy);
+//            Rotate sranda = (Rotate) cylinder.getTransforms().get(0);
+//
+//            projectile.getTransforms().add(sranda);
+//            projectile.getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
+//
+//            System.out.println(cylinder.getTransforms());
+
+//            projectile.setRotationAxis(Rotate.X_AXIS);
+//            projectile.setRotate(400);
+
+//            System.out.println(rotate.getAngle());
+
+//            Translate translate = new Translate();
+//            //translate.
+//
+//            translate.setX(20);
+//            translate.setY(20);
+//            translate.setZ(20);
+//
+//            projectile.getTransforms().add(translate);
+//            projectile.setRotationAxis(Rotate.X_AXIS);
+
+
+
+//            Rotate a = new Rotate();
+//            a.setAngle(rotate.getAngle());
+//            a.setPivotX(rotate.getMxx());
+//            a.setAxis(Rotate.X_AXIS);
+
+
+
+
+
+           // Rotate rotate = (Rotate) camera.getTransforms().get(0);
+            //Rotate a = new Rotate(-rotate.getAngle(), camera.getTranslateX(), camera.getTranslateY() , camera.getTranslateZ(), Rotate.Y_AXIS);
+            //projectile.getTransforms().add(a);
+
+           // projectile.getTransforms().add(new Rotate(rotate.getAngle(), 0, 0, 0, Rotate.Z_AXIS));
+
+
+
+            //System.out.println(cylinder.getLayoutY());
+
+            //System.out.println(projectile.getTransforms().get(0));
             group.getChildren().add(projectile);
             player.ammo -= 1;
             text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
@@ -284,19 +345,57 @@ public class Game extends Application {
     }
 
     private synchronized void update() {
-        Set<Node> toRemove = new HashSet<>();
-        for (Node n : group.getChildren()) {
-            if (n instanceof Sphere) {
-                Sphere s = (Sphere) n;
-                s.setTranslateZ(s.getTranslateZ() + 5);
-//                if (s.getTranslateY() < -20) {
-//                    toRemove.add(n);
-//                } else {
+//        Platform.runLater(() -> {
+//            List<Node> list = Collections.synchronizedList(group.getChildren());
+//            synchronized (list) {
+        CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
+                for (Node n : c) {
+                    if (n instanceof Sphere) {
+                        Sphere s = (Sphere) n;
+                        s.setTranslateZ(s.getTranslateZ() + 5);
+                        checkProjectileConflicts(s);
+                    }
+                }
+//            }
+//        });
+    }
 
-//                }
-            }
-        }
-        group.getChildren().removeAll(toRemove);
+    private synchronized void checkProjectileConflicts(Sphere projectile){
+//        Platform.runLater(() -> {
+//            List<Node> list = Collections.synchronizedList(group.getChildren());
+            Set<Node> toRemove = new HashSet<>();
+            CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
+//            synchronized (list) {
+                for (Node n : c) {
+                    if (n instanceof Box) {
+                        Box b = (Box) n;
+                        if (b.getBoundsInParent().intersects(projectile.getBoundsInParent()) && b instanceof EnemyBox) {
+                            if (checkEnemyConflict) {
+                                ((EnemyBox) b).enemy.health -= 20;
+                                checkEnemyConflict = false;
+                            }
+                            if (((EnemyBox) b).enemy.health <= 0) {
+                                countOfEnemies--;
+                                ((EnemyBox) b).enemy.alive = false;
+                                toRemove.add(n);
+                            }
+                            Platform.runLater(() -> {
+                                if (countOfEnemies == 0) {
+                                    player.alive = false;
+                                    text.setText("You win !");
+                                }
+                            });
+                        } else if (b.getBoundsInParent().intersects(projectile.getBoundsInParent())) {
+                            Platform.runLater(() -> {
+                                toRemove.add(projectile);
+                            });
+
+                        }
+                    }
+                }
+//            }
+            group.getChildren().removeAll(toRemove);
+//        });
     }
 
     public static void main(String[] args) {

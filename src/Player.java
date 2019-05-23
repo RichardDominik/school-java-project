@@ -53,7 +53,6 @@ public class Player extends Thread {
 
             rotate.setAngle(rotate.getAngle() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
             //rotate.setAngle(rotate.getAngle() + (event.getSceneY() - lastMouseY) * MOUSE_SENSITIVITY);
-
             Rotate rotate1 = new Rotate();
             rotate1.setAngle(rotate.getAngle() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
 

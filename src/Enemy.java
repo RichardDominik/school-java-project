@@ -1,3 +1,4 @@
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 
@@ -12,7 +13,7 @@ public class Enemy extends Thread {
 
     Enemy(Game game, int X, int Z) {
         this.game = game;
-        enemyMaterial.setDiffuseColor(Color.RED);
+        enemyMaterial.setDiffuseMap(new Image("textures/enemy.png"));
         EnemyBox enemy = new EnemyBox(X, Z, enemyMaterial, this);
         game.group.getChildren().add(enemy);
     }
