@@ -23,32 +23,56 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Game extends Application {
+    private final int START_X = 50;
+    private final int START_Z = 50;
     private HBox panel = new HBox();
-
-    Group group = new Group();
-    Camera camera = new PerspectiveCamera(true);
-    Cylinder cylinder;
-
-    SubScene scene = new SubScene(group, 1280, 720, true, SceneAntialiasing.BALANCED);
-
-    PhongMaterial boxMaterial = new PhongMaterial();
-    PhongMaterial floorMaterial = new PhongMaterial();
-    PhongMaterial roofMaterial = new PhongMaterial();
-    PhongMaterial firstAidMaterial = new PhongMaterial();
-    PhongMaterial ammmoMaterial = new PhongMaterial();
-    PhongMaterial weaponMarerial = new PhongMaterial();
-    double X;
-    double XX;
-
+    private Group group = new Group();
+    private Camera camera = new PerspectiveCamera(true);
+    private Cylinder cylinder;
+    private SubScene scene = new SubScene(group, 1280, 720, true, SceneAntialiasing.BALANCED);
+    private PhongMaterial boxMaterial = new PhongMaterial();
+    private PhongMaterial floorMaterial = new PhongMaterial();
+    private PhongMaterial roofMaterial = new PhongMaterial();
+    private PhongMaterial firstAidMaterial = new PhongMaterial();
+    private PhongMaterial ammmoMaterial = new PhongMaterial();
+    private PhongMaterial weaponMarerial = new PhongMaterial();
+    private PhongMaterial projectileMaterial = new PhongMaterial();
     private BorderPane layout = new BorderPane();
     private Scene root = new Scene(layout, 1280, 770);
-    Text text;
-    Player player = new Player(this);
+    private Text text;
+    private Player player = new Player(this);
     private char[][] map = new char[12][12];
-    int countOfEnemies = 0;
-    boolean checkEnemyConflict = false;
-    boolean first = false;
+    private int countOfEnemies = 0;
+    private boolean checkEnemyConflict = false;
+    private boolean first = false;
 
+    /**
+     * getter
+     * @return group
+     */
+    public Group getGroup() {
+        return group;
+    }
+
+    /**
+     * getter
+     * @return camera
+     */
+    public Camera getCamera() {
+        return camera;
+    }
+
+    /**
+     * getter
+     * @return cylinder
+     */
+    public Cylinder getCylinder() {
+        return cylinder;
+    }
+
+    /**
+     * @param primaryStage stage
+     */
     @Override
     public void start(Stage primaryStage) {
         preparePanel();
@@ -58,14 +82,14 @@ public class Game extends Application {
 
         scene.setFill(Color.LIGHTBLUE);
         scene.setCamera(camera);
-        camera.setTranslateX(50);
-        camera.setTranslateZ(50);
+        camera.setTranslateX(START_X);
+        camera.setTranslateZ(START_Z);
         camera.setTranslateY(0);
         camera.setFarClip(700);
         createWeapon();
-        createFloor();
         readMapFromFile();
         loadMap();
+        createFloorAndRoof();
         setEvents();
         player.start();
 
@@ -73,45 +97,47 @@ public class Game extends Application {
         primaryStage.setScene(root);
         primaryStage.show();
 
-        Timeline animation = new Timeline(new KeyFrame(Duration.millis(1000), o -> {
+        Timeline animation = new Timeline(new KeyFrame(Duration.millis(40), o -> {
             update();
         }));
         animation.setCycleCount(Timeline.INDEFINITE);
         animation.play();
     }
 
+    /**
+     * function which create weapon for player
+     */
     private void createWeapon(){
         weaponMarerial.setDiffuseMap(new Image("textures/MP_diff_orange.png"));
         cylinder = new Cylinder(0.025, 2);
-        cylinder.setTranslateX(50);
-        cylinder.setTranslateZ(50);
+        cylinder.setTranslateX(START_X);
+        cylinder.setTranslateZ(START_Z);
         cylinder.setTranslateY(0.1);
         cylinder.getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
         cylinder.setMaterial(weaponMarerial);
         group.getChildren().add(cylinder);
     }
 
-
+    /**
+     * function which prepare panel with informations about health and ammo for player
+     */
     private void preparePanel() {
         panel.setMinHeight(50);
         panel.setStyle("-fx-background-image: url(\"textures/m-013-015-bg-min.jpg\");");
         panel.setAlignment(Pos.CENTER);
         panel.setSpacing(100);
-        text = new Text("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
+        text = new Text("HEALTH: "+ player.getHealth() + "%" + "      AMMO: " + player.getAmmo());
         text.setFill(Color.RED);
         text.setStyle("-fx-font: 24 arial;");
         panel.getChildren().add(text);
     }
 
+    /**
+     * function which sets events
+     */
     private void setEvents() {
         root.setOnKeyPressed(event -> {
             switch (event.getCode()) {
-                case R:
-                    camera.translateYProperty().set(camera.getTranslateY() - 2);
-                    break;
-                case F:
-                    camera.translateYProperty().set(camera.getTranslateY() + 2);
-                    break;
                 case SPACE:
                     checkEnemyConflict = true;
                     shoot();
@@ -124,20 +150,21 @@ public class Game extends Application {
         });
 
         root.setOnKeyReleased(event -> player.stopMovement());
-
         camera.getTransforms().add(new Rotate(0, Rotate.Y_AXIS));
 
         root.setOnMousePressed(event -> {
-            player.mousePressed = true;
-            player.lastMouseX = event.getSceneX();
-            player.lastMouseY = event.getSceneY();
+            player.setMousePressed(true);
+            player.setLastMouseX(event.getSceneX());
+            player.setLastMouseY(event.getSceneY());
         });
 
-        root.setOnMouseReleased(event -> player.mousePressed = false);
-
+        root.setOnMouseReleased(event -> player.setMousePressed(false));
         root.setOnMouseDragged(event -> player.mouseDragged(event));
     }
 
+    /**
+     * function which read map from input file
+     */
     private void readMapFromFile(){
         try{
             Scanner input = new Scanner(new File("src/level.txt"));
@@ -160,6 +187,9 @@ public class Game extends Application {
         }
     }
 
+    /**
+     * function which provide loading map from map array
+     */
     private void loadMap() {
         int Z = 0;
         for (int i = map.length - 1; i >= 0; i--) {
@@ -181,6 +211,11 @@ public class Game extends Application {
         }
     }
 
+    /**
+     * function which create BOX
+     * @param X x position
+     * @param Z z position
+     */
     private void createBox(int X, int Z) {
         Box box = new Box(50, 50,50);
         box.setTranslateX(X);
@@ -189,17 +224,30 @@ public class Game extends Application {
         group.getChildren().add(box);
     }
 
+    /**
+     * function which create FIRST AID BOX
+     * @param X x position
+     * @param Z y position
+     */
     private void createFirstAid(int X, int Z){
         FirstAid firstAid = new FirstAid(X, Z, firstAidMaterial);
         group.getChildren().add(firstAid);
     }
 
+    /**
+     * function which create AMMO BOX
+     * @param X x position
+     * @param Z z position
+     */
     private void createAmmo(int X, int Z){
         Ammo ammo = new Ammo(X, Z, ammmoMaterial);
         group.getChildren().add(ammo);
     }
 
-    private void createFloor() {
+    /**
+     * function which create floor and roof for loaded level
+     */
+    private void createFloorAndRoof() {
         boxMaterial.setDiffuseMap(new Image("textures/m-035-min.jpg"));
         floorMaterial.setDiffuseMap(new Image("textures/m-001-min.jpg"));
         roofMaterial.setDiffuseMap(new Image("textures/m-024-min.jpg"));
@@ -207,19 +255,18 @@ public class Game extends Application {
         ammmoMaterial.setDiffuseMap(new Image("textures/bullet.jpg"));
         int floorX = 0;
         int floorZ = 0;
-        for(int i = 0; i < 11; i++) {
-            for (int j = 0; j < 12; j++) {
+
+        for(int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[0].length; j++) {
                 Box box = new Box(50, 1, 50);
                 Box box2 = new Box(50, 1, 50);
                 box.setTranslateX(floorX);
                 box.setTranslateY(15);
                 box.setTranslateZ(floorZ);
-
                 box2.setTranslateX(floorX);
                 box2.setTranslateY(-25);
                 box2.setTranslateZ(floorZ);
                 floorX += 50;
-
                 box.setMaterial(floorMaterial);
                 box2.setMaterial(roofMaterial);
                 group.getChildren().add(box);
@@ -230,182 +277,136 @@ public class Game extends Application {
         }
     }
 
+    /**
+     *  function which checks all possible conflicts for camera
+     * @return boolean
+     */
     synchronized boolean checkCameraCollision () {
         CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
             for (Node n : c) {
                 if (n instanceof Box) {
                     Box b = (Box) n;
                     if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof Ammo) {
-                        player.ammo += ((Ammo) b).getSum();
+                        player.setAmmo(player.getAmmo() + ((Ammo) b).getSum());
                         Platform.runLater(() -> {
                             group.getChildren().remove(n);
-                            text.setText("HEALTH: " + player.health + "%" + "      AMMO: " + player.ammo);
+                            text.setText("HEALTH: " + player.getHealth() + "%" + "      AMMO: " + player.getAmmo());
                         });
                     } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof FirstAid) {
-                        if (player.health + ((FirstAid) b).getSum() > 100) {
-                            player.health = 100;
+                        if (player.getHealth() + ((FirstAid) b).getSum() > 100) {
+                            player.setHealth(100);
                         } else {
-                            player.health += ((FirstAid) b).getSum();
+                            player.setHealth(player.getHealth() + ((FirstAid) b).getSum());
                         }
                         Platform.runLater(() -> {
                             group.getChildren().remove(n);
-                            text.setText("HEALTH: " + player.health + "%" + "      AMMO: " + player.ammo);
+                            text.setText("HEALTH: " + player.getHealth() + "%" + "      AMMO: " + player.getAmmo());
                         });
                     } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent()) && b instanceof EnemyBox) {
-                        player.health -= ((EnemyBox) b).enemy.healthFactor;
+                        player.setHealth(player.getHealth() - ((EnemyBox) b).getEnemy().getHealthFactor());
 
                         Platform.runLater(() -> {
-                            text.setText("HEALTH: " + player.health + "%" + "      AMMO: " + player.ammo);
+                            text.setText("HEALTH: " + player.getHealth() + "%" + "      AMMO: " + player.getAmmo());
 
-                            if (player.health <= 0) {
-                                player.alive = false;
+                            if (player.getHealth() <= 0) {
+                                player.setAlive(false);
                                 text.setText("You was killed by enemy !");
                             }
                         });
-
                     } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent())) {
                         return true;
                     }
                 }
             }
-
         return false;
     }
 
-
+    /**
+     * function which provides shooting
+     */
     private synchronized void shoot() {
-        if(player.ammo > 0 && player.alive){
+        if(player.getAmmo() > 0 && player.getAlive()){
             Rotate rotate = (Rotate) cylinder.getTransforms().get(0);
 
             double angle = rotate.getAngle();
 
-            if(!first){
-                //pretoze je default camery z nejakeho dovodu -90 stupnov ?!
+            if(!first && angle == -90){
+                //deault camera position is -90 deg ?!
                 angle = 0;
                 first = true;
             }
 
-
-
-
-            Projectile projectile = new Projectile(new PhongMaterial(Color.RED), camera, angle);
-
-
-//            System.out.println(rotate.getAngle());
-//            Sphere projectile = new Sphere(0.5);
-//            projectile.setMaterial(new PhongMaterial(Color.RED));
-//            projectile.setTranslateX(camera.getTranslateX() + dx);
-//            projectile.setTranslateY(camera.getTranslateY());
-//            projectile.setTranslateZ(camera.getTranslateZ() + dy);
-//            Rotate sranda = (Rotate) cylinder.getTransforms().get(0);
-//
-//            projectile.getTransforms().add(sranda);
-//            projectile.getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
-//
-//            System.out.println(cylinder.getTransforms());
-
-//            projectile.setRotationAxis(Rotate.X_AXIS);
-//            projectile.setRotate(400);
-
-//            System.out.println(rotate.getAngle());
-
-//            Translate translate = new Translate();
-//            //translate.
-//
-//            translate.setX(20);
-//            translate.setY(20);
-//            translate.setZ(20);
-//
-//            projectile.getTransforms().add(translate);
-//            projectile.setRotationAxis(Rotate.X_AXIS);
-
-
-
-//            Rotate a = new Rotate();
-//            a.setAngle(rotate.getAngle());
-//            a.setPivotX(rotate.getMxx());
-//            a.setAxis(Rotate.X_AXIS);
-
-
-
-
-
-           // Rotate rotate = (Rotate) camera.getTransforms().get(0);
-            //Rotate a = new Rotate(-rotate.getAngle(), camera.getTranslateX(), camera.getTranslateY() , camera.getTranslateZ(), Rotate.Y_AXIS);
-            //projectile.getTransforms().add(a);
-
-           // projectile.getTransforms().add(new Rotate(rotate.getAngle(), 0, 0, 0, Rotate.Z_AXIS));
-
-
-
-            //System.out.println(cylinder.getLayoutY());
-
-            //System.out.println(projectile.getTransforms().get(0));
-
+            projectileMaterial.setDiffuseMap(new Image("textures/flaretest.jpg"));
+            Projectile projectile = new Projectile(projectileMaterial, camera, angle);
 
             group.getChildren().add(projectile);
-            player.ammo -= 1;
-            text.setText("HEALTH: "+ player.health + "%" + "      AMMO: " + player.ammo);
+            player.setAmmo(player.getAmmo() - 1);
+            text.setText("HEALTH: "+ player.getHealth() + "%" + "      AMMO: " + player.getAmmo());
         }
     }
 
+    /**
+     * function for updating enemy and projectile positions
+     */
     private synchronized void update() {
-//        Platform.runLater(() -> {
-//            List<Node> list = Collections.synchronizedList(group.getChildren());
-//            synchronized (list) {
         CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
-                for (Node n : c) {
-                    if (n instanceof Sphere && n instanceof Projectile) {
-                        Sphere s = (Sphere) n;
-//                        s.setTranslateX(s.getTranslateX() * 1.25);
-//                        s.setTranslateZ(s.getTranslateZ() * 1.25);
-                        ((Projectile) n).lenght += 10;
-                        ((Projectile) n).recompute();
-                        checkProjectileConflicts(s);
-                    }
+        for (Node n : c) {
+            if (n instanceof Projectile) {
+                Sphere s = (Sphere) n;
+                ((Projectile) n).setLenght(((Projectile) n).getLenght() + 10);
+                ((Projectile) n).recompute();
+                checkProjectileConflicts(s);
+            } else if (n instanceof EnemyBox){
+                if(player.getAlive()){
+                    double diffX = camera.getTranslateX() - ((EnemyBox) n).getX();
+                    double diffZ = camera.getTranslateZ() - ((EnemyBox) n).getZ();
+                    float angle = (float)Math.atan2(diffZ, diffX);
+                    ((EnemyBox) n).setX(((EnemyBox) n).getX() + ((EnemyBox) n).getEnemy().getEnemySpeed() * Math.cos(angle));
+                    ((EnemyBox) n).setZ(((EnemyBox) n).getZ() + ((EnemyBox) n).getEnemy().getEnemySpeed() * Math.sin(angle));
+                    ((EnemyBox) n).recompute();
                 }
-//            }
-//        });
+            }
+        }
     }
 
+    /**
+     * function which checks all possible conflicts for projectile
+     * @param projectile current projectile
+     */
     private synchronized void checkProjectileConflicts(Sphere projectile){
-//        Platform.runLater(() -> {
-//            List<Node> list = Collections.synchronizedList(group.getChildren());
-            Set<Node> toRemove = new HashSet<>();
-            CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
-//            synchronized (list) {
-                for (Node n : c) {
-                    if (n instanceof Box) {
-                        Box b = (Box) n;
-                        if (b.getBoundsInParent().intersects(projectile.getBoundsInParent()) && b instanceof EnemyBox) {
-                            if (checkEnemyConflict) {
-                                ((EnemyBox) b).enemy.health -= 20;
-                                checkEnemyConflict = false;
-                            }
-                            if (((EnemyBox) b).enemy.health <= 0) {
-                                countOfEnemies--;
-                                ((EnemyBox) b).enemy.alive = false;
-                                toRemove.add(n);
-                            }
-                            Platform.runLater(() -> {
-                                if (countOfEnemies == 0) {
-                                    player.alive = false;
-                                    text.setText("You win !");
-                                }
-                            });
-                        } else if (b.getBoundsInParent().intersects(projectile.getBoundsInParent())) {
-                            Platform.runLater(() -> {
-                                toRemove.add(projectile);
-                            });
-
-                        }
+        Set<Node> toRemove = new HashSet<>();
+        CopyOnWriteArrayList<Node> c = new CopyOnWriteArrayList(group.getChildren());
+        for (Node n : c) {
+            if (n instanceof Box) {
+                Box b = (Box) n;
+                if (b.getBoundsInParent().intersects(projectile.getBoundsInParent()) && b instanceof EnemyBox) {
+                    if (checkEnemyConflict) {
+                        ((EnemyBox) b).getEnemy().setHealth(((EnemyBox) b).getEnemy().getHealth() - 20);
+                        checkEnemyConflict = false;
                     }
+                    if (((EnemyBox) b).getEnemy().getHealth() <= 0) {
+                        countOfEnemies--;
+                        ((EnemyBox) b).getEnemy().setAlive(false);
+                        toRemove.add(n);
+                    }
+                    Platform.runLater(() -> {
+                        if (countOfEnemies == 0) {
+                            player.setAlive(false);
+                            text.setText("You win !");
+                        }
+                    });
+                } else if (b.getBoundsInParent().intersects(projectile.getBoundsInParent())) {
+                        toRemove.add(projectile);
                 }
-//            }
-            group.getChildren().removeAll(toRemove);
-//        });
+            }
+        }
+        group.getChildren().removeAll(toRemove);
     }
 
+    /**
+     * function for launching application
+     * @param args args
+     */
     public static void main(String[] args) {
         launch(args);
     }

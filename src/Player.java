@@ -2,25 +2,105 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.transform.Rotate;
 
+// some parts are taken from Labyrinth.java Author: Lukas Gajdosek
+
 public class Player extends Thread {
     private final float MOUSE_SENSITIVITY = 0.1f;
     private enum Dir {FORWARD, BACKWARD, STOP}
     private Dir direction = Dir.STOP;
     private Game game;
+    private boolean mousePressed = false;
+    private boolean alive = true;
+    private double angle = 0;
+    private double angle1 = 0;
+    private double lastMouseX;
+    private double lastMouseY;
+    private int health = 100;
+    private int ammo = 30;
 
-    boolean mousePressed = false;
-    boolean alive = true;
-    double angle = 0;
-    double angle1 = 0;
-    double lastMouseX;
-    double lastMouseY;
-    int health = 60;
-    int ammo = 30;
+    /**
+     * setter
+     * @param mousePressed boolean on mouse press
+     */
+    public void setMousePressed(boolean mousePressed) {
+        this.mousePressed = mousePressed;
+    }
 
+    /**
+     * setter
+     * @param alive boolean if player is alive
+     */
+    public void setAlive(boolean alive) {
+        this.alive = alive;
+    }
+
+    /**
+     * getter
+     * @return boolean if player is alive
+     */
+    public boolean getAlive(){
+        return alive;
+    }
+
+    /**
+     * setter
+     * @param lastMouseX mouse x position
+     */
+    public void setLastMouseX(double lastMouseX) {
+        this.lastMouseX = lastMouseX;
+    }
+
+    /**
+     * setter
+     * @param lastMouseY mouse y position
+     */
+    public void setLastMouseY(double lastMouseY) {
+        this.lastMouseY = lastMouseY;
+    }
+
+    /**
+     * getter
+     * @return health in percentage
+     */
+    public int getHealth() {
+        return health;
+    }
+
+    /**
+     * setter
+     * @param health health in percentage
+     */
+    public void setHealth(int health) {
+        this.health = health;
+    }
+
+    /**
+     * getter
+     * @return ammo
+     */
+    public int getAmmo() {
+        return ammo;
+    }
+
+    /**
+     * setter
+     * @param ammo ammo
+     */
+    public void setAmmo(int ammo) {
+        this.ammo = ammo;
+    }
+
+    /**
+     * Player constructor
+     * @param game game object
+     */
     Player(Game game) {
         this.game = game;
     }
 
+    /**
+     * thread run
+     */
     @Override
     public void run() {
         while (alive) {
@@ -33,6 +113,10 @@ public class Player extends Thread {
         }
     }
 
+    /**
+     * function which sets direction by key event
+     * @param event KeyEvent
+     */
     void setDirection(KeyEvent event) {
         switch (event.getCode()) {
             case W:
@@ -44,66 +128,65 @@ public class Player extends Thread {
         }
     }
 
+    /**
+     * function which react on mouseDragged
+     * @param event mouseEvent
+     */
     void mouseDragged(MouseEvent event) {
         if (mousePressed) {
-            Rotate rotate = (Rotate) game.camera.getTransforms().get(0);
-
-            game.camera.getTransforms().clear();
-            game.cylinder.getTransforms().clear();
+            Rotate rotate = (Rotate) game.getCamera().getTransforms().get(0);
+            game.getCamera().getTransforms().clear();
+            game.getCylinder().getTransforms().clear();
 
             rotate.setAngle(rotate.getAngle() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
-            //rotate.setAngle(rotate.getAngle() + (event.getSceneY() - lastMouseY) * MOUSE_SENSITIVITY);
             Rotate rotate1 = new Rotate();
             rotate1.setAngle(rotate.getAngle() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
 
-
             angle = rotate.getAngle();
             angle1 = rotate1.getAngle();
-            game.camera.getTransforms().add(rotate);
-            game.cylinder.getTransforms().add(rotate);
-            game.cylinder.getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
-
-
-
-            /* Alternative without Rotate matrix
-            lab.camera.setRotationAxis(Rotate.Y_AXIS);
-            lab.camera.setRotate(lab.camera.getRotate() + (event.getSceneX() - lastMouseX) * MOUSE_SENSITIVITY);
-            angle = lab.camera.getRotate();
-            */
+            game.getCamera().getTransforms().add(rotate);
+            game.getCylinder().getTransforms().add(rotate);
+            game.getCylinder().getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
         }
         lastMouseX = event.getSceneX();
         lastMouseY = event.getSceneY();
     }
 
+    /**
+     * function which stop player movement
+     */
     void stopMovement() {
         direction = Dir.STOP;
     }
 
+    /**
+     * function which provide player movement
+     */
     private void movement() {
         if (direction == Dir.STOP) return;
         double dx = Math.sin(Math.toRadians(angle));
         double dz = Math.cos(Math.toRadians(angle));
-        double oldZ = game.camera.getTranslateZ();
-        double oldX = game.camera.getTranslateX();
+        double oldZ = game.getCamera().getTranslateZ();
+        double oldX = game.getCamera().getTranslateX();
         switch (direction) {
             case FORWARD:
-                game.camera.translateZProperty().set(game.camera.getTranslateZ() + dz);
-                game.camera.translateXProperty().set(game.camera.getTranslateX() + dx);
-                game.cylinder.translateZProperty().set(game.cylinder.getTranslateZ() + dz);
-                game.cylinder.translateXProperty().set(game.cylinder.getTranslateX() + dx);
+                game.getCamera().translateZProperty().set(game.getCamera().getTranslateZ() + dz);
+                game.getCamera().translateXProperty().set(game.getCamera().getTranslateX() + dx);
+                game.getCylinder().translateZProperty().set(game.getCylinder().getTranslateZ() + dz);
+                game.getCylinder().translateXProperty().set(game.getCylinder().getTranslateX() + dx);
                 break;
             case BACKWARD:
-                game.camera.translateZProperty().set(game.camera.getTranslateZ() - dz);
-                game.camera.translateXProperty().set(game.camera.getTranslateX() - dx);
-                game.cylinder.translateZProperty().set(game.cylinder.getTranslateZ() - dz);
-                game.cylinder.translateXProperty().set(game.cylinder.getTranslateX() - dx);
+                game.getCamera().translateZProperty().set(game.getCamera().getTranslateZ() - dz);
+                game.getCamera().translateXProperty().set(game.getCamera().getTranslateX() - dx);
+                game.getCylinder().translateZProperty().set(game.getCylinder().getTranslateZ() - dz);
+                game.getCylinder().translateXProperty().set(game.getCylinder().getTranslateX() - dx);
                 break;
         }
         if (game.checkCameraCollision()) {
-            game.camera.translateZProperty().set(oldZ);
-            game.camera.translateXProperty().set(oldX);
-            game.cylinder.translateZProperty().set(oldZ);
-            game.cylinder.translateXProperty().set(oldX);
+            game.getCamera().translateZProperty().set(oldZ);
+            game.getCamera().translateXProperty().set(oldX);
+            game.getCylinder().translateZProperty().set(oldZ);
+            game.getCylinder().translateXProperty().set(oldX);
         }
     }
 }
