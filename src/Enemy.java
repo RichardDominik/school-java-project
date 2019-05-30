@@ -3,7 +3,7 @@ import javafx.scene.paint.PhongMaterial;
 
 public class Enemy extends Thread {
     private Game game;
-    private double enemySpeed = 1.01;
+    private double enemySpeed = 1.001;
     private boolean alive = true;
     private int health = 100;
     private int healthFactor = 5;

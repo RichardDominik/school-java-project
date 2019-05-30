@@ -12,9 +12,9 @@ public class Ammo extends Box {
      * Ammo constructor
      * @param X x position
      * @param Z z position
-     * @param ammmoMaterial material
+     * @param ammoMaterial material
      */
-    Ammo(int X, int Z,  PhongMaterial ammmoMaterial){
+    Ammo(int X, int Z,  PhongMaterial ammoMaterial){
         super();
         setWidth(WIDTH);
         setHeight(HEIGHT);
@@ -22,7 +22,7 @@ public class Ammo extends Box {
         setTranslateX(X);
         setTranslateZ(Z);
         setTranslateY(Y);
-        setMaterial(ammmoMaterial);
+        setMaterial(ammoMaterial);
     }
 
     /**

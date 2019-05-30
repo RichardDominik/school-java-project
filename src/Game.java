@@ -34,8 +34,8 @@ public class Game extends Application {
     private PhongMaterial floorMaterial = new PhongMaterial();
     private PhongMaterial roofMaterial = new PhongMaterial();
     private PhongMaterial firstAidMaterial = new PhongMaterial();
-    private PhongMaterial ammmoMaterial = new PhongMaterial();
-    private PhongMaterial weaponMarerial = new PhongMaterial();
+    private PhongMaterial ammoMaterial = new PhongMaterial();
+    private PhongMaterial weaponMaterial = new PhongMaterial();
     private PhongMaterial projectileMaterial = new PhongMaterial();
     private BorderPane layout = new BorderPane();
     private Scene root = new Scene(layout, 1280, 770);
@@ -45,6 +45,7 @@ public class Game extends Application {
     private int countOfEnemies = 0;
     private boolean checkEnemyConflict = false;
     private boolean first = false;
+    private AmbientLight ambientLight = new AmbientLight(Color.WHITE);
 
     /**
      * getter
@@ -89,6 +90,7 @@ public class Game extends Application {
         createWeapon();
         readMapFromFile();
         loadMap();
+        group.getChildren().add(ambientLight);
         createFloorAndRoof();
         setEvents();
         player.start();
@@ -108,13 +110,13 @@ public class Game extends Application {
      * function which create weapon for player
      */
     private void createWeapon(){
-        weaponMarerial.setDiffuseMap(new Image("textures/MP_diff_orange.png"));
+        weaponMaterial.setDiffuseMap(new Image("textures/MP_diff_orange.png"));
         cylinder = new Cylinder(0.025, 2);
         cylinder.setTranslateX(START_X);
         cylinder.setTranslateZ(START_Z);
         cylinder.setTranslateY(0.1);
         cylinder.getTransforms().add(new Rotate(-90, 0, 0, 0, Rotate.X_AXIS));
-        cylinder.setMaterial(weaponMarerial);
+        cylinder.setMaterial(weaponMaterial);
         group.getChildren().add(cylinder);
     }
 
@@ -240,7 +242,7 @@ public class Game extends Application {
      * @param Z z position
      */
     private void createAmmo(int X, int Z){
-        Ammo ammo = new Ammo(X, Z, ammmoMaterial);
+        Ammo ammo = new Ammo(X, Z, ammoMaterial);
         group.getChildren().add(ammo);
     }
 
@@ -252,7 +254,7 @@ public class Game extends Application {
         floorMaterial.setDiffuseMap(new Image("textures/m-001-min.jpg"));
         roofMaterial.setDiffuseMap(new Image("textures/m-024-min.jpg"));
         firstAidMaterial.setDiffuseMap(new Image("textures/firstaid.jpg"));
-        ammmoMaterial.setDiffuseMap(new Image("textures/bullet.jpg"));
+        ammoMaterial.setDiffuseMap(new Image("textures/bullet.jpg"));
         int floorX = 0;
         int floorZ = 0;
 
@@ -310,7 +312,7 @@ public class Game extends Application {
 
                             if (player.getHealth() <= 0) {
                                 player.setAlive(false);
-                                text.setText("You was killed by enemy !");
+                                text.setText("You have been killed by enemy !");
                             }
                         });
                     } else if (b.getBoundsInParent().intersects(camera.getBoundsInParent())) {
