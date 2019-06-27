@@ -2,7 +2,7 @@
 ## Simple JavaFX 3D game
 
 Project for school subject Programing 4 (Java).
-###Technologies
+### Technologies
 - Java
 - JavaFX 
 
@@ -10,7 +10,7 @@ Project for school subject Programing 4 (Java).
 
 ![Screenshot](./images/game.png)
 
-###Controls
+### Controls
 
 - shooting [space]
 - movement [W, S, mouse]
