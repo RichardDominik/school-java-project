@@ -2,7 +2,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.transform.Rotate;
 
-// some parts are taken from Labyrinth.java Author: Lukas Gajdosech
+// some parts are taken from https://github.com/Programovanie4/Java2019/blob/master/12_javafx_3D/src/Labyrinth.java Author: Lukas Gajdosech
 
 public class Player extends Thread {
     private final float MOUSE_SENSITIVITY = 0.1f;
