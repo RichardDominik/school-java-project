@@ -6,7 +6,7 @@ Project for school subject Programing 4 (Java).
 - Java
 - JavaFX 
 
-###Screenshots
+### Screenshots
 
 ![Screenshot](./images/game.png)
 
