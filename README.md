@@ -1,7 +1,7 @@
 # School java project
 ## Simple JavaFX 3D game
 
-Project for school subject Programing 4 (Java).
+Project for school subject Programming 4 (Java).
 ### Technologies
 - Java
 - JavaFX 
